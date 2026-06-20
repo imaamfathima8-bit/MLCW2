@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title> Golden Retail - Customer Segmentation</title>
+    <title>Golden Retail - Customer Segmentation</title>
     <!-- Bootstrap 5 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Chart.js -->
@@ -52,10 +52,10 @@
             font-size: 1rem;
         }
         /* Gold Themed Cluster Colors */
-        .cluster-0 { background: #D4AF37; color: #0a080c; }  /* Pure Gold */
-        .cluster-1 { background: #E8E0D4; color: #0a080c; } /* Pearl White */
-        .cluster-2 { background: #CD7F32; color: #0a080c; } /* Bronze */
-        .cluster-3 { background: #8B7355; color: #fff; }    /* Dark Copper */
+        .cluster-0 { background: #D4AF37; color: #0a080c; }
+        .cluster-1 { background: #E8E0D4; color: #0a080c; }
+        .cluster-2 { background: #CD7F32; color: #0a080c; }
+        .cluster-3 { background: #8B7355; color: #fff; }
         
         .prediction-input {
             background: rgba(0,0,0,0.4);
@@ -72,16 +72,19 @@
             outline: none;
             box-shadow: 0 0 20px rgba(212, 175, 55, 0.15);
         }
-        .btn-predict {
-            background: linear-gradient(135deg, #B8942C 0%, #D4AF37 50%, #F5D061 100%);
+        .btn-predict, .btn-sample, .btn-chart-toggle {
             border: none;
-            padding: 12px 30px;
+            padding: 10px 16px;
             font-weight: 700;
             border-radius: 40px;
-            color: #0a080c;
             width: 100%;
             transition: 0.3s;
             letter-spacing: 1px;
+            font-size: 0.85rem;
+        }
+        .btn-predict {
+            background: linear-gradient(135deg, #B8942C 0%, #D4AF37 50%, #F5D061 100%);
+            color: #0a080c;
             box-shadow: 0 4px 15px rgba(212, 175, 55, 0.2);
         }
         .btn-predict:hover {
@@ -89,10 +92,35 @@
             box-shadow: 0 10px 30px rgba(212, 175, 55, 0.4);
             color: #0a080c;
         }
+        .btn-sample {
+            background: rgba(212, 175, 55, 0.1);
+            color: #C5A059;
+            border: 1px solid rgba(212, 175, 55, 0.3);
+        }
+        .btn-sample:hover {
+            background: rgba(212, 175, 55, 0.2);
+            color: #F5D061;
+            border-color: #D4AF37;
+        }
+        .btn-chart-toggle {
+            background: rgba(0, 229, 255, 0.05);
+            color: #8ac9d4;
+            border: 1px solid rgba(0, 229, 255, 0.15);
+            font-size: 0.75rem;
+            padding: 6px 12px;
+        }
+        .btn-chart-toggle:hover {
+            background: rgba(0, 229, 255, 0.1);
+            color: #00E5FF;
+            border-color: rgba(0, 229, 255, 0.3);
+        }
         .chart-container {
             position: relative;
-            height: 220px; /* Slightly reduced to fit top */
+            height: 220px;
             width: 100%;
+        }
+        .chart-container.radar-chart {
+            height: 260px;
         }
         .center-detail {
             background: rgba(0,0,0,0.3);
@@ -126,7 +154,7 @@
         .center-table td { padding: 3px; text-align: center; border-bottom: 1px solid rgba(212, 175, 55, 0.05); }
         #statusMsg { margin-top: 6px; }
         
-        /* ----- Prediction Result Box (with Strategy) ----- */
+        /* ----- Prediction Result Box ----- */
         #predictionResult {
             font-size: 1.4rem;
             font-weight: 700;
@@ -168,6 +196,13 @@
         .strategy-box i {
             color: #D4AF37;
             margin-right: 6px;
+        }
+        .confidence-score {
+            font-size: 0.9rem;
+            color: #00E5FF;
+            font-weight: 400;
+            margin-top: 4px;
+            display: block;
         }
 
         /* Golden Legend */
@@ -236,10 +271,6 @@
             border-top: 1px solid rgba(212, 175, 55, 0.1);
             margin: 0.8rem 0;
         }
-        .badge-status {
-            background: rgba(212, 175, 55, 0.15);
-            color: #F5D061;
-        }
         .form-label {
             color: #A89880;
             font-size: 0.7rem;
@@ -252,14 +283,19 @@
             font-size: 1rem;
             margin-bottom: 8px;
         }
-        .input-section {
-            margin-top: 10px;
+        .chart-toggle-container {
+            display: flex;
+            gap: 8px;
+            margin-top: 6px;
+        }
+        .chart-toggle-container .btn-chart-toggle {
+            flex: 1;
         }
     </style>
 </head>
 <body>
     <div class="container py-3">
-        <!-- Header with Golden Retail Branding -->
+        <!-- Header -->
         <div class="text-center mb-3">
             <h1 class="display-5 fw-bold">
                 <i class="fas fa-crown text-gold"></i> 
@@ -268,12 +304,12 @@
             </h1>
             <p class="text-secondary" style="color: #A89880 !important; font-size: 0.9rem;">
                 <i class="fas fa-chart-line text-gold"></i> KMeans Clustering | Real-time Predictor | 
-                <span class="text-gold">✨ Golden Retail Inc.</span>
+                <span class="text-gold"> Golden Retail Inc.</span>
             </p>
         </div>
 
         <div class="row g-3">
-            <!-- LEFT: Model Info + Centers (Unchanged) -->
+            <!-- LEFT: Model Info + Centers -->
             <div class="col-lg-5">
                 <div class="glass-card">
                     <h5 class="gradient-text"><i class="fas fa-cubes"></i> Model Summary</h5>
@@ -291,13 +327,24 @@
                 </div>
             </div>
 
-            <!-- RIGHT: Predictor + Chart -->
+            <!-- RIGHT: Predictor + Charts -->
             <div class="col-lg-7">
                 <div class="glass-card">
-                    <!-- ========================================== -->
-                    <!-- 1. CHART MOVED TO THE TOP (RIGHT BELOW HEADER) -->
-                    <!-- ========================================== -->
-                    <div class="chart-container">
+                    <!-- Chart Toggle Buttons -->
+                    <div class="chart-toggle-container">
+                        <button id="showLineChartBtn" class="btn-chart-toggle active" onclick="switchChart('line')">
+                            📈 Line Chart
+                        </button>
+                        <button id="showRadarChartBtn" class="btn-chart-toggle" onclick="switchChart('radar')">
+                            🕸️ Radar Chart
+                        </button>
+                        <button id="showRadarTop5Btn" class="btn-chart-toggle" onclick="switchChart('radarTop5')">
+                            🎯 Top 5 Radar
+                        </button>
+                    </div>
+
+                    <!-- Chart Container -->
+                    <div class="chart-container" id="chartContainer">
                         <canvas id="featureChart"></canvas>
                     </div>
                     <div id="centerDetail" class="mt-1 center-detail">
@@ -305,42 +352,38 @@
                     </div>
                     <hr class="gold-divider">
 
-                    <!-- 2. Input Features (Moved Down) -->
+                    <!-- Input Features -->
                     <h5 class="gradient-text section-title"><i class="fas fa-sliders-h"></i> Input Features (17)</h5>
-                    <div id="inputFieldsContainer" class="row g-1">
-                        <!-- JS එකෙන් 17 fields හදනවා -->
-                    </div>
+                    <div id="inputFieldsContainer" class="row g-1"></div>
 
-                    <!-- 3. Feature Legend Button & Table -->
+                    <!-- Feature Legend -->
                     <button class="legend-toggle mt-2" onclick="toggleLegend()">
                         🔑 <span id="legendBtnText">Show</span> Feature Key (F1 → Column Names)
                     </button>
                     <div id="featureLegend" style="display: none;" class="legend-table">
                         <table>
-                            <thead>
-                                <tr>
-                                    <th style="width:50px;">Field</th>
-                                    <th>Dataset Column Name</th>
-                                </tr>
-                            </thead>
-                            <tbody id="legendBody">
-                                <!-- JS එකෙන් 17 rows හදනවා -->
-                            </tbody>
+                            <thead><tr><th style="width:50px;">Field</th><th>Dataset Column Name</th></tr></thead>
+                            <tbody id="legendBody"></tbody>
                         </table>
                     </div>
                     
-                    <!-- 4. Predict Button + Result -->
-                    <div class="row mt-3">
+                    <!-- Buttons -->
+                    <div class="row mt-3 g-2">
                         <div class="col-6">
                             <button id="predictBtn" class="btn-predict">
-                                <i class="fas fa-gem"></i> Predict Segment
+                                <i class="fas fa-gem"></i> Predict
                             </button>
                         </div>
-                        <div class="col-6 text-center">
-                            <div id="predictionResult" class="pt-2">
-                                <span class="text-secondary">-</span>
-                            </div>
+                        <div class="col-6">
+                            <button id="loadSampleBtn" class="btn-sample">
+                                <i class="fas fa-dice"></i> Load Sample
+                            </button>
                         </div>
+                    </div>
+
+                    <!-- Result -->
+                    <div id="predictionResult" class="pt-2">
+                        <span class="text-secondary">-</span>
                     </div>
                 </div>
             </div>
@@ -355,26 +398,32 @@
     <script>
         let globalFeatureCount = 17;
         let myChart = null;
+        let currentClusterCenters = null;
+        let currentChartType = 'line'; // 'line', 'radar', 'radarTop5'
+        let currentUserFeatures = null;
+        let currentCenterFeatures = null;
+        let currentClusterId = null;
 
-        // -------- Marketing Strategies for each Cluster --------
+        // -------- Marketing Strategies --------
         const marketingStrategies = {
-            0: {
-                name: '💰 Cash Dependent',
-                desc: 'Offer balance transfer options, reduce cash advance fees, and provide debt management plans to retain them.'
-            },
-            1: {
-                name: '📦 Installment Lovers',
-                desc: 'Promote EMI schemes, bundle deals, and reward installment-based purchases with extra loyalty points.'
-            },
-            2: {
-                name: '👑 Premium Spenders',
-                desc: 'Enroll in VIP loyalty programs, provide exclusive early access to sales, and offer premium product recommendations.'
-            },
-            3: {
-                name: '🔄 At-Risk Customers',
-                desc: 'Send re-engagement campaigns, offer reactivation discounts, and personalized win-back offers.'
-            }
+            0: { name: '💰 Cash Dependent', desc: 'Offer balance transfer options, reduce cash advance fees, and provide debt management plans.' },
+            1: { name: '📦 Installment Lovers', desc: 'Promote EMI schemes, bundle deals, and reward installment purchases with extra loyalty points.' },
+            2: { name: '👑 Premium Spenders', desc: 'Enroll in VIP loyalty programs, provide exclusive early access, and offer premium product recommendations.' },
+            3: { name: '🔄 At-Risk Customers', desc: 'Send re-engagement campaigns, offer reactivation discounts, and personalized win-back offers.' }
         };
+
+        // -------- Sample Customers --------
+        const sampleCustomers = {
+            0: [3665.25, 0.96, 297.87, 189.26, 108.67, 3426.81, 0.22, 0.09, 0.13, 0.41, 11.12, 4.50, 6084.51, 2632.79, 1564.98, 0.03, 11.38],
+            1: [485.29, 0.89, 716.93, 106.38, 611.21, 104.02, 0.86, 0.09, 0.79, 0.02, 0.43, 16.06, 3206.23, 848.25, 649.10, 0.31, 11.47],
+            2: [2169.81, 0.98, 3608.79, 2406.77, 1202.41, 629.92, 0.90, 0.65, 0.64, 0.08, 2.02, 46.89, 7060.07, 3648.24, 1042.78, 0.24, 11.86],
+            3: [802.71, 0.77, 262.88, 217.09, 45.94, 373.35, 0.19, 0.11, 0.08, 0.08, 1.36, 3.18, 3160.06, 846.32, 503.37, 0.08, 11.45]
+        };
+        let sampleCycle = 0;
+
+        // -------- Top 5 Feature Names (Most Important) --------
+        const top5FeatureIndices = [2, 5, 13, 3, 0]; // PURCHASES, CASH_ADVANCE, PAYMENTS, ONEOFF_PURCHASES, BALANCE
+        const top5FeatureNames = ['PURCHASES', 'CASH_ADVANCE', 'PAYMENTS', 'ONEOFF_PURCHASES', 'BALANCE'];
 
         // ---------- 1. Load Model Info ----------
         async function loadModelInfo() {
@@ -395,12 +444,14 @@
                 document.getElementById('inertia').innerText = data.inertia ? data.inertia.toFixed(2) : '-';
                 document.getElementById('nIter').innerText = data.n_iter || '-';
 
-                if (data.cluster_centers) renderCenters(data.cluster_centers);
+                if (data.cluster_centers) {
+                    currentClusterCenters = data.cluster_centers;
+                    renderCenters(data.cluster_centers);
+                }
                 if (data.n_features) globalFeatureCount = data.n_features;
                 
                 generateInputs(globalFeatureCount);
                 generateLegend();
-                // Draw a default empty chart to occupy space
                 drawEmptyChart();
 
             } catch (err) {
@@ -432,7 +483,7 @@
             container.innerHTML = html;
         }
 
-        // ---------- 3. Generate Inputs (F1, F2...) ----------
+        // ---------- 3. Generate Inputs ----------
         function generateInputs(count) {
             const container = document.getElementById('inputFieldsContainer');
             let html = '';
@@ -440,14 +491,14 @@
                 html += `
                     <div class="col-6 col-lg-3">
                         <label class="form-label">F${i+1}</label>
-                        <input type="number" class="prediction-input" id="feat_${i}" value="${(Math.random()*2-1).toFixed(2)}" step="any">
+                        <input type="number" class="prediction-input" id="feat_${i}" value="0" step="any">
                     </div>
                 `;
             }
             container.innerHTML = html;
         }
 
-        // ---------- 4. Generate Legend (F1 -> Column Name) ----------
+        // ---------- 4. Generate Legend ----------
         function generateLegend() {
             const tbody = document.getElementById('legendBody');
             const columnNames = [
@@ -478,39 +529,104 @@
             }
         }
 
-        // ---------- 6. Draw Empty Chart (Initial State) ----------
+        // ---------- 6. Load Sample ----------
+        function loadSampleData() {
+            const keys = Object.keys(sampleCustomers);
+            const clusterId = parseInt(keys[sampleCycle % keys.length]);
+            sampleCycle++;
+            const data = sampleCustomers[clusterId];
+            for (let i = 0; i < data.length && i < globalFeatureCount; i++) {
+                document.getElementById(`feat_${i}`).value = data[i];
+            }
+            document.getElementById('predictBtn').click();
+        }
+
+        // ---------- 7. Calculate Similarity ----------
+        function calculateSimilarity(userFeat, centerFeat) {
+            if (!centerFeat) return 0;
+            let sumSq = 0;
+            for (let i = 0; i < userFeat.length; i++) {
+                let diff = userFeat[i] - centerFeat[i];
+                sumSq += diff * diff;
+            }
+            const distance = Math.sqrt(sumSq);
+            const maxDist = Math.sqrt(globalFeatureCount) * 4.5;
+            let score = Math.max(0, (1 - (distance / maxDist)) * 100);
+            return Math.min(99.9, score);
+        }
+
+        // ---------- 8. Switch Chart Type ----------
+        function switchChart(type) {
+            currentChartType = type;
+            
+            // Update button styles
+            document.querySelectorAll('.btn-chart-toggle').forEach(btn => btn.classList.remove('active'));
+            if (type === 'line') document.getElementById('showLineChartBtn').classList.add('active');
+            else if (type === 'radar') document.getElementById('showRadarChartBtn').classList.add('active');
+            else if (type === 'radarTop5') document.getElementById('showRadarTop5Btn').classList.add('active');
+            
+            // Update chart container height
+            const container = document.getElementById('chartContainer');
+            if (type === 'line') {
+                container.style.height = '220px';
+                container.classList.remove('radar-chart');
+            } else {
+                container.style.height = '260px';
+                container.classList.add('radar-chart');
+            }
+            
+            // Redraw with current data
+            if (currentUserFeatures && currentCenterFeatures) {
+                drawChart(currentUserFeatures, currentCenterFeatures, currentClusterId);
+            } else {
+                drawEmptyChart();
+            }
+        }
+
+        // ---------- 9. Draw Empty Chart ----------
         function drawEmptyChart() {
             const ctx = document.getElementById('featureChart').getContext('2d');
             if (myChart) myChart.destroy();
             
             const labels = Array.from({length: globalFeatureCount}, (_, i) => `F${i+1}`);
             const emptyData = new Array(globalFeatureCount).fill(0);
+            const isRadar = (currentChartType === 'radar' || currentChartType === 'radarTop5');
+            
+            let chartLabels = labels;
+            let userData = emptyData;
+            let centerData = emptyData;
+            
+            if (currentChartType === 'radarTop5') {
+                chartLabels = top5FeatureNames;
+                userData = top5FeatureIndices.map(i => 0);
+                centerData = top5FeatureIndices.map(i => 0);
+            }
 
             myChart = new Chart(ctx, {
-                type: 'line',
+                type: isRadar ? 'radar' : 'line',
                 data: {
-                    labels: labels,
+                    labels: chartLabels,
                     datasets: [
                         {
                             label: '📊 Your Input',
-                            data: emptyData,
+                            data: userData,
                             borderColor: '#00E5FF',
-                            backgroundColor: 'rgba(0, 229, 255, 0.05)',
+                            backgroundColor: isRadar ? 'rgba(0, 229, 255, 0.1)' : 'rgba(0, 229, 255, 0.05)',
                             tension: 0.3,
                             fill: true,
                             pointBackgroundColor: '#00E5FF',
-                            pointRadius: 3,
+                            pointRadius: isRadar ? 4 : 3,
                         },
                         {
                             label: '🎯 Cluster Center',
-                            data: emptyData,
+                            data: centerData,
                             borderColor: '#D4AF37',
-                            backgroundColor: 'rgba(212, 175, 55, 0.02)',
+                            backgroundColor: isRadar ? 'rgba(212, 175, 55, 0.05)' : 'rgba(212, 175, 55, 0.02)',
                             tension: 0.3,
                             fill: false,
-                            borderDash: [5, 5],
+                            borderDash: isRadar ? [] : [5, 5],
                             pointBackgroundColor: '#D4AF37',
-                            pointRadius: 3,
+                            pointRadius: isRadar ? 4 : 3,
                         }
                     ]
                 },
@@ -521,25 +637,99 @@
                         legend: { 
                             labels: { 
                                 color: '#e8e0d4', 
-                                font: { size: 10 } 
+                                font: { size: isRadar ? 9 : 10 } 
                             } 
                         }
                     },
-                    scales: {
-                        x: { 
-                            grid: { color: 'rgba(255,255,255,0.05)' }, 
-                            ticks: { color: '#A89880', font: { size: 8 } } 
-                        },
-                        y: { 
-                            grid: { color: 'rgba(255,255,255,0.05)' }, 
-                            ticks: { color: '#A89880', font: { size: 8 } } 
+                    scales: isRadar ? {
+                        r: {
+                            grid: { color: 'rgba(255,255,255,0.1)' },
+                            angleLines: { color: 'rgba(255,255,255,0.1)' },
+                            pointLabels: { color: '#A89880', font: { size: 8 } },
+                            ticks: { color: '#A89880', backdropColor: 'transparent', font: { size: 7 } }
                         }
+                    } : {
+                        x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#A89880', font: { size: 8 } } },
+                        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#A89880', font: { size: 8 } } }
                     }
                 }
             });
         }
 
-        // ---------- 7. Predict + Display Marketing Strategy ----------
+        // ---------- 10. Draw Chart with Data ----------
+        function drawChart(userFeatures, centerFeatures, clusterId) {
+            const ctx = document.getElementById('featureChart').getContext('2d');
+            if (myChart) myChart.destroy();
+            
+            const isRadar = (currentChartType === 'radar' || currentChartType === 'radarTop5');
+            let chartLabels, userData, centerData;
+            
+            if (currentChartType === 'radarTop5') {
+                chartLabels = top5FeatureNames;
+                userData = top5FeatureIndices.map(i => userFeatures[i] || 0);
+                centerData = top5FeatureIndices.map(i => centerFeatures[i] || 0);
+            } else {
+                chartLabels = userFeatures.map((_, i) => `F${i+1}`);
+                userData = userFeatures;
+                centerData = centerFeatures;
+            }
+
+            myChart = new Chart(ctx, {
+                type: isRadar ? 'radar' : 'line',
+                data: {
+                    labels: chartLabels,
+                    datasets: [
+                        {
+                            label: '📊 Your Input (Ups & Downs)',
+                            data: userData,
+                            borderColor: '#00E5FF',
+                            backgroundColor: isRadar ? 'rgba(0, 229, 255, 0.1)' : 'rgba(0, 229, 255, 0.1)',
+                            tension: 0.3,
+                            fill: true,
+                            pointBackgroundColor: '#00E5FF',
+                            pointRadius: isRadar ? 4 : 3,
+                        },
+                        {
+                            label: `🎯 Segment ${clusterId} Center`,
+                            data: centerData,
+                            borderColor: '#D4AF37',
+                            backgroundColor: isRadar ? 'rgba(212, 175, 55, 0.05)' : 'rgba(212, 175, 55, 0.05)',
+                            tension: 0.3,
+                            fill: false,
+                            borderDash: isRadar ? [] : [5, 5],
+                            pointBackgroundColor: '#D4AF37',
+                            pointRadius: isRadar ? 4 : 3,
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { 
+                            labels: { 
+                                color: '#e8e0d4', 
+                                font: { size: isRadar ? 9 : 10 } 
+                            } 
+                        },
+                        tooltip: { mode: 'index', intersect: false }
+                    },
+                    scales: isRadar ? {
+                        r: {
+                            grid: { color: 'rgba(255,255,255,0.1)' },
+                            angleLines: { color: 'rgba(255,255,255,0.1)' },
+                            pointLabels: { color: '#A89880', font: { size: 8 } },
+                            ticks: { color: '#A89880', backdropColor: 'transparent', font: { size: 7 } }
+                        }
+                    } : {
+                        x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#A89880', font: { size: 8 } } },
+                        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#A89880', font: { size: 8 } } }
+                    }
+                }
+            });
+        }
+
+        // ---------- 11. Predict ----------
         document.getElementById('predictBtn').addEventListener('click', async function() {
             const btn = this;
             const resultDiv = document.getElementById('predictionResult');
@@ -559,7 +749,7 @@
 
             if (!valid) {
                 resultDiv.innerHTML = '❌ Invalid Input!';
-                btn.disabled = false; btn.innerHTML = '<i class="fas fa-gem"></i> Predict Segment';
+                btn.disabled = false; btn.innerHTML = '<i class="fas fa-gem"></i> Predict';
                 return;
             }
 
@@ -576,11 +766,19 @@
                 } else {
                     const clusterId = data.prediction[0];
                     const center = data.centers[0];
+                    currentUserFeatures = features;
+                    currentCenterFeatures = center;
+                    currentClusterId = clusterId;
+                    
                     const strategy = marketingStrategies[clusterId] || { name: 'Unknown', desc: 'No strategy defined.' };
+                    const score = calculateSimilarity(features, center);
+                    const scoreColor = score > 70 ? '#43e97b' : (score > 40 ? '#f6d365' : '#fa709a');
 
-                    // Display Cluster Badge + Marketing Strategy
                     resultDiv.innerHTML = `
                         <span class="badge-cluster cluster-${clusterId % 4}">Segment ${clusterId}</span>
+                        <span class="confidence-score" style="color: ${scoreColor};">
+                            🎯 Match Confidence: <strong>${score.toFixed(1)}%</strong>
+                        </span>
                         <div class="strategy-box">
                             <span class="strategy-title"><i class="fas fa-bullhorn"></i> ${strategy.name}</span>
                             <span class="strategy-desc">${strategy.desc}</span>
@@ -588,77 +786,20 @@
                     `;
                     
                     drawChart(features, center, clusterId);
-                    detailDiv.innerHTML = `<i class="fas fa-bullseye text-gold"></i> Cluster Center: [${center.map(v => v.toFixed(3)).join(', ')}]`;
+                    detailDiv.innerHTML = `<i class="fas fa-bullseye text-gold"></i> Cluster Center: [${center.map(v => v.toFixed(3)).join(', ')}] | Match: ${score.toFixed(1)}%`;
                 }
             } catch (err) {
                 resultDiv.innerHTML = '❌ Server Error!';
             } finally {
                 btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-gem"></i> Predict Segment';
+                btn.innerHTML = '<i class="fas fa-gem"></i> Predict';
             }
         });
 
-        // ---------- 8. Draw Chart (Golden Theme) ----------
-        function drawChart(userFeatures, centerFeatures, clusterId) {
-            const ctx = document.getElementById('featureChart').getContext('2d');
-            if (myChart) myChart.destroy();
-            const labels = userFeatures.map((_, i) => `F${i+1}`);
+        // ---------- 12. Load Sample Button ----------
+        document.getElementById('loadSampleBtn').addEventListener('click', loadSampleData);
 
-            myChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [
-                        {
-                            label: '📊 Your Input (Ups & Downs)',
-                            data: userFeatures,
-                            borderColor: '#00E5FF',
-                            backgroundColor: 'rgba(0, 229, 255, 0.1)',
-                            tension: 0.3,
-                            fill: true,
-                            pointBackgroundColor: '#00E5FF',
-                            pointRadius: 3,
-                        },
-                        {
-                            label: `🎯 Segment ${clusterId} Center`,
-                            data: centerFeatures,
-                            borderColor: '#D4AF37',
-                            backgroundColor: 'rgba(212, 175, 55, 0.05)',
-                            tension: 0.3,
-                            fill: false,
-                            borderDash: [5, 5],
-                            pointBackgroundColor: '#D4AF37',
-                            pointRadius: 3,
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { 
-                            labels: { 
-                                color: '#e8e0d4', 
-                                font: { size: 10 } 
-                            } 
-                        },
-                        tooltip: { mode: 'index', intersect: false }
-                    },
-                    scales: {
-                        x: { 
-                            grid: { color: 'rgba(255,255,255,0.05)' }, 
-                            ticks: { color: '#A89880', font: { size: 8 } } 
-                        },
-                        y: { 
-                            grid: { color: 'rgba(255,255,255,0.05)' }, 
-                            ticks: { color: '#A89880', font: { size: 8 } } 
-                        }
-                    }
-                }
-            });
-        }
-
-        // ---------- 9. Start ----------
+        // ---------- 13. Start ----------
         loadModelInfo();
     </script>
 </body>

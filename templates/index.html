@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title> Golden Retail - Customer Segmentation</title>
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* ----- Golden Retail Inc. Luxury Theme ----- */
+        body {
+            background: #0a080c;
+            color: #e8e0d4;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            background-image: radial-gradient(circle at 10% 20%, rgba(212, 175, 55, 0.08) 0%, transparent 50%),
+                              radial-gradient(circle at 90% 80%, rgba(212, 175, 55, 0.05) 0%, transparent 50%);
+        }
+        .glass-card {
+            background: rgba(20, 18, 22, 0.75);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(212, 175, 55, 0.15);
+            border-radius: 24px;
+            padding: 1.5rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7), 0 0 30px rgba(212, 175, 55, 0.03);
+            height: 100%;
+            transition: 0.3s;
+        }
+        .glass-card:hover {
+            transform: translateY(-3px);
+            border-color: rgba(212, 175, 55, 0.3);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.8), 0 0 40px rgba(212, 175, 55, 0.05);
+        }
+        .gradient-text {
+            background: linear-gradient(135deg, #D4AF37 0%, #F5D061 50%, #C5A059 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .brand-gold {
+            color: #D4AF37;
+        }
+        .badge-cluster {
+            padding: 4px 14px;
+            border-radius: 40px;
+            font-weight: 700;
+            font-size: 1rem;
+        }
+        /* Gold Themed Cluster Colors */
+        .cluster-0 { background: #D4AF37; color: #0a080c; }  /* Pure Gold */
+        .cluster-1 { background: #E8E0D4; color: #0a080c; } /* Pearl White */
+        .cluster-2 { background: #CD7F32; color: #0a080c; } /* Bronze */
+        .cluster-3 { background: #8B7355; color: #fff; }    /* Dark Copper */
+        
+        .prediction-input {
+            background: rgba(0,0,0,0.4);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            color: #e8e0d4;
+            border-radius: 10px;
+            padding: 5px 8px;
+            width: 100%;
+            font-size: 0.8rem;
+            transition: 0.3s;
+        }
+        .prediction-input:focus {
+            border-color: #D4AF37;
+            outline: none;
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.15);
+        }
+        .btn-predict {
+            background: linear-gradient(135deg, #B8942C 0%, #D4AF37 50%, #F5D061 100%);
+            border: none;
+            padding: 12px 30px;
+            font-weight: 700;
+            border-radius: 40px;
+            color: #0a080c;
+            width: 100%;
+            transition: 0.3s;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.2);
+        }
+        .btn-predict:hover {
+            transform: scale(1.03);
+            box-shadow: 0 10px 30px rgba(212, 175, 55, 0.4);
+            color: #0a080c;
+        }
+        .chart-container {
+            position: relative;
+            height: 220px; /* Slightly reduced to fit top */
+            width: 100%;
+        }
+        .center-detail {
+            background: rgba(0,0,0,0.3);
+            border-radius: 12px;
+            padding: 10px;
+            font-size: 0.7rem;
+            max-height: 60px;
+            overflow-y: auto;
+            color: #aaa;
+            border-left: 3px solid #D4AF37;
+        }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #D4AF37; border-radius: 10px; }
+        
+        .center-table {
+            max-height: 250px;
+            overflow-y: auto;
+            font-size: 0.7rem;
+            background: rgba(0,0,0,0.3);
+            border-radius: 12px;
+            padding: 8px;
+            border: 1px solid rgba(212, 175, 55, 0.1);
+        }
+        .center-table table { width: 100%; color: #ccc; border-collapse: collapse; }
+        .center-table th { 
+            position: sticky; top: 0; background: #0a080c; 
+            padding: 4px; border-bottom: 2px solid #D4AF37;
+            color: #D4AF37;
+        }
+        .center-table td { padding: 3px; text-align: center; border-bottom: 1px solid rgba(212, 175, 55, 0.05); }
+        #statusMsg { margin-top: 6px; }
+        
+        /* ----- Prediction Result Box (with Strategy) ----- */
+        #predictionResult {
+            font-size: 1.4rem;
+            font-weight: 700;
+            text-align: center;
+            padding: 5px;
+            min-height: 80px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .strategy-box {
+            background: rgba(212, 175, 55, 0.05);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            border-radius: 16px;
+            padding: 10px 15px;
+            margin-top: 6px;
+            width: 100%;
+            text-align: left;
+            font-size: 0.85rem;
+            color: #e8e0d4;
+            box-shadow: inset 0 0 20px rgba(212, 175, 55, 0.03);
+        }
+        .strategy-box .strategy-title {
+            color: #F5D061;
+            font-weight: 600;
+            font-size: 0.75rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            display: block;
+            margin-bottom: 2px;
+        }
+        .strategy-box .strategy-desc {
+            font-weight: 400;
+            font-size: 0.8rem;
+            color: #c4b8a5;
+            line-height: 1.3;
+        }
+        .strategy-box i {
+            color: #D4AF37;
+            margin-right: 6px;
+        }
+
+        /* Golden Legend */
+        .legend-toggle {
+            background: rgba(212, 175, 55, 0.05);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            color: #C5A059;
+            padding: 4px 14px;
+            border-radius: 40px;
+            font-size: 0.75rem;
+            transition: 0.3s;
+            cursor: pointer;
+            width: 100%;
+        }
+        .legend-toggle:hover {
+            background: rgba(212, 175, 55, 0.1);
+            color: #F5D061;
+            border-color: #D4AF37;
+        }
+        .legend-table {
+            background: rgba(0,0,0,0.4);
+            border-radius: 16px;
+            padding: 12px;
+            max-height: 250px;
+            overflow-y: auto;
+            font-size: 0.7rem;
+            margin-top: 8px;
+            border: 1px solid rgba(212, 175, 55, 0.1);
+        }
+        .legend-table table {
+            width: 100%;
+            border-collapse: collapse;
+            color: #ccc;
+        }
+        .legend-table th {
+            position: sticky;
+            top: 0;
+            background: #0a080c;
+            padding: 6px 4px;
+            border-bottom: 2px solid #D4AF37;
+            text-align: left;
+            color: #D4AF37;
+        }
+        .legend-table td {
+            padding: 4px 6px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .legend-table tr:hover td {
+            background: rgba(212, 175, 55, 0.05);
+        }
+        .legend-badge {
+            background: rgba(212, 175, 55, 0.15);
+            color: #F5D061;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.65rem;
+        }
+        .gold-divider {
+            border-color: rgba(212, 175, 55, 0.15);
+        }
+        .text-gold {
+            color: #D4AF37;
+        }
+        hr {
+            border-top: 1px solid rgba(212, 175, 55, 0.1);
+            margin: 0.8rem 0;
+        }
+        .badge-status {
+            background: rgba(212, 175, 55, 0.15);
+            color: #F5D061;
+        }
+        .form-label {
+            color: #A89880;
+            font-size: 0.7rem;
+            margin-bottom: 2px;
+        }
+        .stat-number {
+            color: #F5D061;
+        }
+        .section-title {
+            font-size: 1rem;
+            margin-bottom: 8px;
+        }
+        .input-section {
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container py-3">
+        <!-- Header with Golden Retail Branding -->
+        <div class="text-center mb-3">
+            <h1 class="display-5 fw-bold">
+                <i class="fas fa-crown text-gold"></i> 
+                <span class="gradient-text">Golden Retail</span>
+                <span style="color: #e8e0d4;">Customer Segmentation</span>
+            </h1>
+            <p class="text-secondary" style="color: #A89880 !important; font-size: 0.9rem;">
+                <i class="fas fa-chart-line text-gold"></i> KMeans Clustering | Real-time Predictor | 
+                <span class="text-gold">✨ Golden Retail Inc.</span>
+            </p>
+        </div>
+
+        <div class="row g-3">
+            <!-- LEFT: Model Info + Centers (Unchanged) -->
+            <div class="col-lg-5">
+                <div class="glass-card">
+                    <h5 class="gradient-text"><i class="fas fa-cubes"></i> Model Summary</h5>
+                    <hr class="gold-divider">
+                    <div class="row text-center">
+                        <div class="col-4"><span class="text-secondary small">Clusters</span><br><span id="nClusters" class="fw-bold h5 stat-number">-</span></div>
+                        <div class="col-4"><span class="text-secondary small">Features</span><br><span id="nFeatures" class="fw-bold h5 stat-number">-</span></div>
+                        <div class="col-4"><span class="text-secondary small">Inertia</span><br><span id="inertia" class="fw-bold h5 stat-number">-</span></div>
+                    </div>
+                    <div class="mt-2"><span class="text-secondary small">Iterations:</span> <span id="nIter" class="fw-bold text-gold">-</span></div>
+                    <div id="statusMsg" class="mt-2 text-success small">✅ Models Loaded</div>
+
+                    <h6 class="mt-3 gradient-text"><i class="fas fa-table"></i> Cluster Centers</h6>
+                    <div id="centersContainer" class="center-table"><span class="text-secondary">Loading...</span></div>
+                </div>
+            </div>
+
+            <!-- RIGHT: Predictor + Chart -->
+            <div class="col-lg-7">
+                <div class="glass-card">
+                    <!-- ========================================== -->
+                    <!-- 1. CHART MOVED TO THE TOP (RIGHT BELOW HEADER) -->
+                    <!-- ========================================== -->
+                    <div class="chart-container">
+                        <canvas id="featureChart"></canvas>
+                    </div>
+                    <div id="centerDetail" class="mt-1 center-detail">
+                        <i class="fas fa-bullseye text-gold"></i> Chart shows your input vs cluster center.
+                    </div>
+                    <hr class="gold-divider">
+
+                    <!-- 2. Input Features (Moved Down) -->
+                    <h5 class="gradient-text section-title"><i class="fas fa-sliders-h"></i> Input Features (17)</h5>
+                    <div id="inputFieldsContainer" class="row g-1">
+                        <!-- JS එකෙන් 17 fields හදනවා -->
+                    </div>
+
+                    <!-- 3. Feature Legend Button & Table -->
+                    <button class="legend-toggle mt-2" onclick="toggleLegend()">
+                        🔑 <span id="legendBtnText">Show</span> Feature Key (F1 → Column Names)
+                    </button>
+                    <div id="featureLegend" style="display: none;" class="legend-table">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="width:50px;">Field</th>
+                                    <th>Dataset Column Name</th>
+                                </tr>
+                            </thead>
+                            <tbody id="legendBody">
+                                <!-- JS එකෙන් 17 rows හදනවා -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- 4. Predict Button + Result -->
+                    <div class="row mt-3">
+                        <div class="col-6">
+                            <button id="predictBtn" class="btn-predict">
+                                <i class="fas fa-gem"></i> Predict Segment
+                            </button>
+                        </div>
+                        <div class="col-6 text-center">
+                            <div id="predictionResult" class="pt-2">
+                                <span class="text-secondary">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center mt-3 opacity-50 small" style="color: #A89880;">
+            <i class="fas fa-crown text-gold"></i> Golden Retail Inc. | Data-Driven Customer Insights
+        </div>
+    </div>
+
+    <script>
+        let globalFeatureCount = 17;
+        let myChart = null;
+
+        // -------- Marketing Strategies for each Cluster --------
+        const marketingStrategies = {
+            0: {
+                name: '💰 Cash Dependent',
+                desc: 'Offer balance transfer options, reduce cash advance fees, and provide debt management plans to retain them.'
+            },
+            1: {
+                name: '📦 Installment Lovers',
+                desc: 'Promote EMI schemes, bundle deals, and reward installment-based purchases with extra loyalty points.'
+            },
+            2: {
+                name: '👑 Premium Spenders',
+                desc: 'Enroll in VIP loyalty programs, provide exclusive early access to sales, and offer premium product recommendations.'
+            },
+            3: {
+                name: '🔄 At-Risk Customers',
+                desc: 'Send re-engagement campaigns, offer reactivation discounts, and personalized win-back offers.'
+            }
+        };
+
+        // ---------- 1. Load Model Info ----------
+        async function loadModelInfo() {
+            try {
+                const res = await fetch('/api/model_info');
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+                console.log('Model Data:', data);
+
+                if (data.error) {
+                    document.getElementById('statusMsg').innerHTML = `❌ ${data.error}`;
+                    document.getElementById('statusMsg').className = 'mt-2 text-danger small';
+                    return;
+                }
+
+                document.getElementById('nClusters').innerText = data.n_clusters || '-';
+                document.getElementById('nFeatures').innerText = data.n_features || '-';
+                document.getElementById('inertia').innerText = data.inertia ? data.inertia.toFixed(2) : '-';
+                document.getElementById('nIter').innerText = data.n_iter || '-';
+
+                if (data.cluster_centers) renderCenters(data.cluster_centers);
+                if (data.n_features) globalFeatureCount = data.n_features;
+                
+                generateInputs(globalFeatureCount);
+                generateLegend();
+                // Draw a default empty chart to occupy space
+                drawEmptyChart();
+
+            } catch (err) {
+                console.error(err);
+                document.getElementById('statusMsg').innerHTML = '❌ Failed to load model info. Check server.';
+                document.getElementById('statusMsg').className = 'mt-2 text-danger small';
+                generateInputs(17);
+                generateLegend();
+                drawEmptyChart();
+            }
+        }
+
+        // ---------- 2. Render Centers ----------
+        function renderCenters(centers) {
+            const container = document.getElementById('centersContainer');
+            if (!centers || centers.length === 0) {
+                container.innerHTML = '<span class="text-secondary">No centers found.</span>';
+                return;
+            }
+            let html = `<table><thead><tr><th>#</th>`;
+            for (let i=0; i<centers[0].length; i++) html += `<th>F${i+1}</th>`;
+            html += `</tr></thead><tbody>`;
+            centers.forEach((c, idx) => {
+                html += `<tr><td><span class="badge-cluster cluster-${idx % 4}">${idx}</span></td>`;
+                c.forEach(v => html += `<td>${v.toFixed(2)}</td>`);
+                html += `</tr>`;
+            });
+            html += `</tbody></table>`;
+            container.innerHTML = html;
+        }
+
+        // ---------- 3. Generate Inputs (F1, F2...) ----------
+        function generateInputs(count) {
+            const container = document.getElementById('inputFieldsContainer');
+            let html = '';
+            for (let i = 0; i < count; i++) {
+                html += `
+                    <div class="col-6 col-lg-3">
+                        <label class="form-label">F${i+1}</label>
+                        <input type="number" class="prediction-input" id="feat_${i}" value="${(Math.random()*2-1).toFixed(2)}" step="any">
+                    </div>
+                `;
+            }
+            container.innerHTML = html;
+        }
+
+        // ---------- 4. Generate Legend (F1 -> Column Name) ----------
+        function generateLegend() {
+            const tbody = document.getElementById('legendBody');
+            const columnNames = [
+                'BALANCE', 'BALANCE_FREQUENCY', 'PURCHASES', 'ONEOFF_PURCHASES',
+                'INSTALLMENTS_PURCHASES', 'CASH_ADVANCE', 'PURCHASES_FREQUENCY',
+                'ONEOFF_PURCHASES_FREQUENCY', 'PURCHASES_INSTALLMENTS_FREQUENCY',
+                'CASH_ADVANCE_FREQUENCY', 'CASH_ADVANCE_TRX', 'PURCHASES_TRX',
+                'CREDIT_LIMIT', 'PAYMENTS', 'MINIMUM_PAYMENTS',
+                'PRC_FULL_PAYMENT', 'TENURE'
+            ];
+            let html = '';
+            columnNames.forEach((name, index) => {
+                html += `<tr><td><span class="legend-badge">F${index + 1}</span></td><td>${name}</td></tr>`;
+            });
+            tbody.innerHTML = html;
+        }
+
+        // ---------- 5. Toggle Legend ----------
+        function toggleLegend() {
+            const legend = document.getElementById('featureLegend');
+            const btnText = document.getElementById('legendBtnText');
+            if (legend.style.display === 'none') {
+                legend.style.display = 'block';
+                btnText.innerText = 'Hide';
+            } else {
+                legend.style.display = 'none';
+                btnText.innerText = 'Show';
+            }
+        }
+
+        // ---------- 6. Draw Empty Chart (Initial State) ----------
+        function drawEmptyChart() {
+            const ctx = document.getElementById('featureChart').getContext('2d');
+            if (myChart) myChart.destroy();
+            
+            const labels = Array.from({length: globalFeatureCount}, (_, i) => `F${i+1}`);
+            const emptyData = new Array(globalFeatureCount).fill(0);
+
+            myChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: '📊 Your Input',
+                            data: emptyData,
+                            borderColor: '#00E5FF',
+                            backgroundColor: 'rgba(0, 229, 255, 0.05)',
+                            tension: 0.3,
+                            fill: true,
+                            pointBackgroundColor: '#00E5FF',
+                            pointRadius: 3,
+                        },
+                        {
+                            label: '🎯 Cluster Center',
+                            data: emptyData,
+                            borderColor: '#D4AF37',
+                            backgroundColor: 'rgba(212, 175, 55, 0.02)',
+                            tension: 0.3,
+                            fill: false,
+                            borderDash: [5, 5],
+                            pointBackgroundColor: '#D4AF37',
+                            pointRadius: 3,
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { 
+                            labels: { 
+                                color: '#e8e0d4', 
+                                font: { size: 10 } 
+                            } 
+                        }
+                    },
+                    scales: {
+                        x: { 
+                            grid: { color: 'rgba(255,255,255,0.05)' }, 
+                            ticks: { color: '#A89880', font: { size: 8 } } 
+                        },
+                        y: { 
+                            grid: { color: 'rgba(255,255,255,0.05)' }, 
+                            ticks: { color: '#A89880', font: { size: 8 } } 
+                        }
+                    }
+                }
+            });
+        }
+
+        // ---------- 7. Predict + Display Marketing Strategy ----------
+        document.getElementById('predictBtn').addEventListener('click', async function() {
+            const btn = this;
+            const resultDiv = document.getElementById('predictionResult');
+            const detailDiv = document.getElementById('centerDetail');
+            
+            btn.disabled = true;
+            btn.innerHTML = '⏳ Predicting...';
+            resultDiv.innerHTML = '<span class="text-secondary">⏳</span>';
+
+            const features = [];
+            let valid = true;
+            for (let i=0; i<globalFeatureCount; i++) {
+                const val = parseFloat(document.getElementById(`feat_${i}`).value);
+                if (isNaN(val)) { valid = false; break; }
+                features.push(val);
+            }
+
+            if (!valid) {
+                resultDiv.innerHTML = '❌ Invalid Input!';
+                btn.disabled = false; btn.innerHTML = '<i class="fas fa-gem"></i> Predict Segment';
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/predict', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ features: features })
+                });
+                const data = await res.json();
+
+                if (data.error) {
+                    resultDiv.innerHTML = `❌ ${data.error}`;
+                } else {
+                    const clusterId = data.prediction[0];
+                    const center = data.centers[0];
+                    const strategy = marketingStrategies[clusterId] || { name: 'Unknown', desc: 'No strategy defined.' };
+
+                    // Display Cluster Badge + Marketing Strategy
+                    resultDiv.innerHTML = `
+                        <span class="badge-cluster cluster-${clusterId % 4}">Segment ${clusterId}</span>
+                        <div class="strategy-box">
+                            <span class="strategy-title"><i class="fas fa-bullhorn"></i> ${strategy.name}</span>
+                            <span class="strategy-desc">${strategy.desc}</span>
+                        </div>
+                    `;
+                    
+                    drawChart(features, center, clusterId);
+                    detailDiv.innerHTML = `<i class="fas fa-bullseye text-gold"></i> Cluster Center: [${center.map(v => v.toFixed(3)).join(', ')}]`;
+                }
+            } catch (err) {
+                resultDiv.innerHTML = '❌ Server Error!';
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-gem"></i> Predict Segment';
+            }
+        });
+
+        // ---------- 8. Draw Chart (Golden Theme) ----------
+        function drawChart(userFeatures, centerFeatures, clusterId) {
+            const ctx = document.getElementById('featureChart').getContext('2d');
+            if (myChart) myChart.destroy();
+            const labels = userFeatures.map((_, i) => `F${i+1}`);
+
+            myChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: '📊 Your Input (Ups & Downs)',
+                            data: userFeatures,
+                            borderColor: '#00E5FF',
+                            backgroundColor: 'rgba(0, 229, 255, 0.1)',
+                            tension: 0.3,
+                            fill: true,
+                            pointBackgroundColor: '#00E5FF',
+                            pointRadius: 3,
+                        },
+                        {
+                            label: `🎯 Segment ${clusterId} Center`,
+                            data: centerFeatures,
+                            borderColor: '#D4AF37',
+                            backgroundColor: 'rgba(212, 175, 55, 0.05)',
+                            tension: 0.3,
+                            fill: false,
+                            borderDash: [5, 5],
+                            pointBackgroundColor: '#D4AF37',
+                            pointRadius: 3,
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { 
+                            labels: { 
+                                color: '#e8e0d4', 
+                                font: { size: 10 } 
+                            } 
+                        },
+                        tooltip: { mode: 'index', intersect: false }
+                    },
+                    scales: {
+                        x: { 
+                            grid: { color: 'rgba(255,255,255,0.05)' }, 
+                            ticks: { color: '#A89880', font: { size: 8 } } 
+                        },
+                        y: { 
+                            grid: { color: 'rgba(255,255,255,0.05)' }, 
+                            ticks: { color: '#A89880', font: { size: 8 } } 
+                        }
+                    }
+                }
+            });
+        }
+
+        // ---------- 9. Start ----------
+        loadModelInfo();
+    </script>
+</body>
+</html>

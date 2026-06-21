@@ -356,17 +356,6 @@
                     <h5 class="gradient-text section-title"><i class="fas fa-sliders-h"></i> Input Features (17)</h5>
                     <div id="inputFieldsContainer" class="row g-1"></div>
 
-                    <!-- Feature Legend -->
-                    <button class="legend-toggle mt-2" onclick="toggleLegend()">
-                        🔑 <span id="legendBtnText">Show</span> Feature Key (F1 → Column Names)
-                    </button>
-                    <div id="featureLegend" style="display: none;" class="legend-table">
-                        <table>
-                            <thead><tr><th style="width:50px;">Field</th><th>Dataset Column Name</th></tr></thead>
-                            <tbody id="legendBody"></tbody>
-                        </table>
-                    </div>
-                    
                     <!-- Buttons -->
                     <div class="row mt-3 g-2">
                         <div class="col-6">
@@ -451,7 +440,7 @@
                 if (data.n_features) globalFeatureCount = data.n_features;
                 
                 generateInputs(globalFeatureCount);
-                generateLegend();
+                
                 drawEmptyChart();
 
             } catch (err) {
@@ -459,7 +448,7 @@
                 document.getElementById('statusMsg').innerHTML = '❌ Failed to load model info. Check server.';
                 document.getElementById('statusMsg').className = 'mt-2 text-danger small';
                 generateInputs(17);
-                generateLegend();
+                
                 drawEmptyChart();
             }
         }
@@ -472,7 +461,8 @@
                 return;
             }
             let html = `<table><thead><tr><th>#</th>`;
-            for (let i=0; i<centers[0].length; i++) html += `<th>F${i+1}</th>`;
+            const featureNames = ["BALANCE", "BALANCE_FREQUENCY", "PURCHASES", "ONEOFF_PURCHASES", "INSTALLMENTS_PURCHASES", "CASH_ADVANCE", "PURCHASES_FREQUENCY", "ONEOFF_PURCHASES_FREQUENCY", "PURCHASES_INSTALLMENTS_FREQUENCY", "CASH_ADVANCE_FREQUENCY", "CASH_ADVANCE_TRX", "PURCHASES_TRX", "CREDIT_LIMIT", "PAYMENTS", "MINIMUM_PAYMENTS", "PRC_FULL_PAYMENT", "TENURE"];
+            featureNames.forEach(name => { html += `<th>${name}</th>`; });
             html += `</tr></thead><tbody>`;
             centers.forEach((c, idx) => {
                 html += `<tr><td><span class="badge-cluster cluster-${idx % 4}">${idx}</span></td>`;
@@ -486,47 +476,34 @@
         // ---------- 3. Generate Inputs ----------
         function generateInputs(count) {
             const container = document.getElementById('inputFieldsContainer');
+            const featureNames = [
+    'BALANCE',
+    'BALANCE_FREQUENCY',
+    'PURCHASES',
+    'ONEOFF_PURCHASES',
+    'INSTALLMENTS_PURCHASES',
+    'CASH_ADVANCE',
+    'PURCHASES_FREQUENCY',
+    'ONEOFF_PURCHASES_FREQUENCY',
+    'PURCHASES_INSTALLMENTS_FREQUENCY',
+    'CASH_ADVANCE_FREQUENCY',
+    'CASH_ADVANCE_TRX',
+    'PURCHASES_TRX',
+    'CREDIT_LIMIT',
+    'PAYMENTS',
+    'MINIMUM_PAYMENTS',
+    'PRC_FULL_PAYMENT',
+    'TENURE'
+];
             let html = '';
             for (let i = 0; i < count; i++) {
                 html += `
                     <div class="col-6 col-lg-3">
-                        <label class="form-label">F${i+1}</label>
-                        <input type="number" class="prediction-input" id="feat_${i}" value="0" step="any">
+<label class="form-label">${featureNames[i]}</label>                        <input type="number" class="prediction-input" id="feat_${i}" value="0" step="any">
                     </div>
                 `;
             }
             container.innerHTML = html;
-        }
-
-        // ---------- 4. Generate Legend ----------
-        function generateLegend() {
-            const tbody = document.getElementById('legendBody');
-            const columnNames = [
-                'BALANCE', 'BALANCE_FREQUENCY', 'PURCHASES', 'ONEOFF_PURCHASES',
-                'INSTALLMENTS_PURCHASES', 'CASH_ADVANCE', 'PURCHASES_FREQUENCY',
-                'ONEOFF_PURCHASES_FREQUENCY', 'PURCHASES_INSTALLMENTS_FREQUENCY',
-                'CASH_ADVANCE_FREQUENCY', 'CASH_ADVANCE_TRX', 'PURCHASES_TRX',
-                'CREDIT_LIMIT', 'PAYMENTS', 'MINIMUM_PAYMENTS',
-                'PRC_FULL_PAYMENT', 'TENURE'
-            ];
-            let html = '';
-            columnNames.forEach((name, index) => {
-                html += `<tr><td><span class="legend-badge">F${index + 1}</span></td><td>${name}</td></tr>`;
-            });
-            tbody.innerHTML = html;
-        }
-
-        // ---------- 5. Toggle Legend ----------
-        function toggleLegend() {
-            const legend = document.getElementById('featureLegend');
-            const btnText = document.getElementById('legendBtnText');
-            if (legend.style.display === 'none') {
-                legend.style.display = 'block';
-                btnText.innerText = 'Hide';
-            } else {
-                legend.style.display = 'none';
-                btnText.innerText = 'Show';
-            }
         }
 
         // ---------- 6. Load Sample ----------
@@ -588,7 +565,7 @@
             const ctx = document.getElementById('featureChart').getContext('2d');
             if (myChart) myChart.destroy();
             
-            const labels = Array.from({length: globalFeatureCount}, (_, i) => `F${i+1}`);
+            const labels = ["BALANCE", "BALANCE_FREQ", "PURCHASES", "ONEOFF", "INSTALLMENTS", "CASH_ADV", "PURCH_FREQ", "ONEOFF_FREQ", "INST_FREQ", "CASH_ADV_FREQ", "CASH_TRX", "PURCH_TRX", "CREDIT_LIMIT", "PAYMENTS", "MIN_PAY", "FULL_PAY", "TENURE"];
             const emptyData = new Array(globalFeatureCount).fill(0);
             const isRadar = (currentChartType === 'radar' || currentChartType === 'radarTop5');
             
@@ -669,7 +646,7 @@
                 userData = top5FeatureIndices.map(i => userFeatures[i] || 0);
                 centerData = top5FeatureIndices.map(i => centerFeatures[i] || 0);
             } else {
-                chartLabels = userFeatures.map((_, i) => `F${i+1}`);
+                chartLabels = ["BALANCE", "BALANCE_FREQ", "PURCHASES", "ONEOFF", "INSTALLMENTS", "CASH_ADV", "PURCH_FREQ", "ONEOFF_FREQ", "INST_FREQ", "CASH_ADV_FREQ", "CASH_TRX", "PURCH_TRX", "CREDIT_LIMIT", "PAYMENTS", "MIN_PAY", "FULL_PAY", "TENURE"];
                 userData = userFeatures;
                 centerData = centerFeatures;
             }
